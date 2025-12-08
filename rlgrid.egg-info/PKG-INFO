@@ -1,3 +1,28 @@
+Metadata-Version: 2.4
+Name: rlgrid
+Version: 0.1.0
+Summary: A research codebase for testing theoretical bounds in average-reward reinforcement learning using deterministic gridworld environments
+Author: Research Team
+License: MIT
+Keywords: reinforcement-learning,average-reward,gridworld,MDP
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Science/Research
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
+Requires-Python: >=3.9
+Description-Content-Type: text/markdown
+Requires-Dist: numpy>=1.21.0
+Requires-Dist: matplotlib>=3.5.0
+Requires-Dist: jupyter>=1.0.0
+Provides-Extra: dev
+Requires-Dist: pytest>=7.0.0; extra == "dev"
+Requires-Dist: pytest-cov>=4.0.0; extra == "dev"
+
 # Average Reward Laplacian Approximation
 
 A research codebase for testing theoretical bounds in **average-reward reinforcement learning** using deterministic gridworld environments.
