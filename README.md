@@ -244,19 +244,6 @@ def random_deterministic_policy(env: GridWorldEnv, rng=None) -> np.ndarray
 def policy_induced_transition_matrix(env: GridWorldEnv, policy: np.ndarray) -> np.ndarray
 ```
 
-### Utility Functions
-
-```python
-def simulate(env, policy, T, start_state=None, rng=None) -> Tuple[states, actions, rewards]
-def estimate_average_reward(rewards, burn_in=0) -> float
-def visualize_grid(env, ax=None, show_state_indices=True, title=None)
-def compute_average_reward_exact(env, policy) -> float
-```
-
-## Average-Reward Setting
-
-This codebase is designed for the **average-reward** (continuing) reinforcement learning setting:
-
 $$\rho(\pi) = \lim_{T \to \infty} \frac{1}{T} \sum_{t=0}^{T-1} r_t$$
 
 Key properties:
