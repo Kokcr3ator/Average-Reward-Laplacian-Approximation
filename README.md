@@ -243,10 +243,3 @@ def random_policy(env: GridWorldEnv, rng=None) -> np.ndarray
 def random_deterministic_policy(env: GridWorldEnv, rng=None) -> np.ndarray
 def policy_induced_transition_matrix(env: GridWorldEnv, policy: np.ndarray) -> np.ndarray
 ```
-
-$$\rho(\pi) = \lim_{T \to \infty} \frac{1}{T} \sum_{t=0}^{T-1} r_t$$
-
-Key properties:
-- **No terminal states**: The task continues indefinitely
-- **Ergodicity**: Teleportation ensures all states are reachable under any policy
-- **Exact computation**: The stationary distribution enables closed-form average reward calculation
