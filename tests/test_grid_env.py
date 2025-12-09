@@ -313,7 +313,7 @@ class TestStepFunction:
                     assert reward == 1.0
     
     def test_teleportation_on_goal(self, simple_env):
-        """Test teleportation to non-goal state after reaching goal."""
+        """Test that entering goal returns goal state, teleportation happens on next step."""
         # Find a state adjacent to goal and action that leads to goal
         goal_row, goal_col = simple_env.goal_pos
         P = simple_env.get_transition_kernel()
@@ -322,15 +322,26 @@ class TestStepFunction:
             for action in range(simple_env.n_actions):
                 if np.argmax(P[state, action]) == simple_env.goal_state:
                     # This (state, action) leads to goal
-                    # After teleportation, should be in non-goal state
-                    for _ in range(10):  # Test multiple times due to randomness
-                        next_state, reward = simple_env.step(state, action)
-                        assert reward == 1.0
-                        assert next_state != simple_env.goal_state
-                        assert next_state in simple_env._non_goal_states
+                    # Next state should BE the goal, reward +1
+                    next_state, reward = simple_env.step(state, action)
+                    assert reward == 1.0
+                    assert next_state == simple_env.goal_state
                     return  # Test passed
         
         pytest.fail("No state-action pair leads to goal")
+    
+    def test_teleportation_from_goal(self, simple_env):
+        """Test that any action from goal teleports to random non-goal state."""
+        # First, get to the goal
+        goal_state = simple_env.goal_state
+        
+        # Any action from goal should teleport to non-goal state with reward -1
+        for _ in range(10):  # Test multiple times due to randomness
+            for a in range(simple_env.n_actions):
+                next_state, reward = simple_env.step(goal_state, a)
+                assert reward == -1.0
+                assert next_state != goal_state
+                assert next_state in simple_env._non_goal_states
     
     def test_invalid_state_error(self, simple_env):
         """Test error on invalid state."""
@@ -364,10 +375,12 @@ class TestMinimalEnvironment:
         assert env.n_states == 1
         assert env.goal_state == 0
         
-        # All actions should stay in place (no non-goal states to teleport to)
+        # All actions from goal should try to teleport, but no non-goal states exist
+        # So it stays at goal with reward -1 (since we're leaving goal, not entering)
         for a in range(env.n_actions):
             next_state, reward = env.step(0, a)
-            assert reward == 1.0  # Always reaching goal
+            assert reward == -1.0  # Leaving goal (teleport attempt)
+            assert next_state == 0  # No other state to go to
             assert next_state == 0  # No other state to teleport to
     
     def test_two_cell_environment(self):

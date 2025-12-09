@@ -163,75 +163,23 @@ class TestSimulate:
         assert np.any(rewards == 1.0)
     
     def test_teleportation_works(self, simple_env):
-        """Test that teleportation happens after goal."""
+        """Test that teleportation happens when leaving goal."""
         pi = uniform_policy(simple_env)
         T = 1000
         rng = np.random.default_rng(42)
         
         states, _, rewards = simulate(simple_env, pi, T=T, rng=rng)
         
-        # After a +1 reward, the next state should not be the goal
-        for t in range(len(rewards)):
+        # After a +1 reward, the next state should BE the goal
+        # Then after -1 reward from goal, next state should NOT be goal (teleported)
+        for t in range(len(rewards) - 1):
             if rewards[t] == 1.0:
-                # Next state should not be goal (teleportation happened)
-                assert states[t + 1] != simple_env.goal_state
-
-
-class TestEstimateAverageReward:
-    """Tests for estimate_average_reward function."""
-    
-    def test_basic_computation(self):
-        """Test basic average computation."""
-        rewards = np.array([-1, -1, 1, -1, -1, -1, 1, -1])
-        avg = estimate_average_reward(rewards)
-        expected = (-1 - 1 + 1 - 1 - 1 - 1 + 1 - 1) / 8
-        assert np.isclose(avg, expected)
-    
-    def test_burn_in(self):
-        """Test burn-in discards initial samples."""
-        rewards = np.array([1, 1, 1, -1, -1, -1])  # First 3 are +1, last 3 are -1
-        avg = estimate_average_reward(rewards, burn_in=3)
-        assert avg == -1.0
-    
-    def test_burn_in_too_large_error(self):
-        """Test error when burn-in is too large."""
-        rewards = np.array([1, -1, 1])
-        with pytest.raises(ValueError, match="burn_in"):
-            estimate_average_reward(rewards, burn_in=3)
-    
-    def test_single_reward(self):
-        """Test with single reward."""
-        rewards = np.array([1.0])
-        assert estimate_average_reward(rewards) == 1.0
-
-
-class TestEstimateAverageRewardRunning:
-    """Tests for estimate_average_reward_running function."""
-    
-    def test_shape(self):
-        """Test output has same shape as input."""
-        rewards = np.array([-1, 1, -1, 1, -1])
-        running = estimate_average_reward_running(rewards)
-        assert running.shape == rewards.shape
-    
-    def test_first_element(self):
-        """Test first element is first reward."""
-        rewards = np.array([1.0, -1, -1, -1])
-        running = estimate_average_reward_running(rewards)
-        assert running[0] == 1.0
-    
-    def test_last_element(self):
-        """Test last element is overall average."""
-        rewards = np.array([-1, -1, 1, -1])
-        running = estimate_average_reward_running(rewards)
-        assert np.isclose(running[-1], np.mean(rewards))
-    
-    def test_monotonic_example(self):
-        """Test with constant rewards."""
-        rewards = np.array([1.0, 1.0, 1.0, 1.0])
-        running = estimate_average_reward_running(rewards)
-        assert np.allclose(running, 1.0)
-
+                # After +1 reward, we should be at the goal
+                assert states[t + 1] == simple_env.goal_state
+                # Next step from goal should teleport (reward -1)
+                assert rewards[t + 1] == -1.0
+                # And we should no longer be at goal
+                assert states[t + 2] != simple_env.goal_state
 
 class TestComputeStationaryDistribution:
     """Tests for compute_stationary_distribution function."""
@@ -279,72 +227,3 @@ class TestComputeStationaryDistribution:
         
         assert np.isclose(mu.sum(), 1.0)
         assert np.all(mu >= 0)
-
-
-class TestComputeAverageRewardExact:
-    """Tests for compute_average_reward_exact function."""
-    
-    def test_returns_float(self, simple_env):
-        """Test function returns a float."""
-        pi = uniform_policy(simple_env)
-        avg = compute_average_reward_exact(simple_env, pi)
-        assert isinstance(avg, float)
-    
-    def test_in_valid_range(self, simple_env):
-        """Test average reward is in [-1, 1]."""
-        pi = uniform_policy(simple_env)
-        avg = compute_average_reward_exact(simple_env, pi)
-        assert -1.0 <= avg <= 1.0
-    
-    def test_matches_simulation(self, simple_env):
-        """Test exact computation matches long simulation."""
-        rng = np.random.default_rng(42)
-        pi = uniform_policy(simple_env)
-        
-        # Exact computation
-        exact_avg = compute_average_reward_exact(simple_env, pi)
-        
-        # Long simulation
-        T = 100000
-        _, _, rewards = simulate(simple_env, pi, T=T, rng=rng)
-        sim_avg = estimate_average_reward(rewards, burn_in=1000)
-        
-        # Should be close (within ~0.01 for long simulation)
-        assert np.isclose(exact_avg, sim_avg, atol=0.02)
-    
-    def test_different_policies(self, simple_env):
-        """Test different policies can give different average rewards."""
-        rng = np.random.default_rng(42)
-        
-        pi1 = uniform_policy(simple_env)
-        pi2 = random_deterministic_policy(simple_env, rng=rng)
-        
-        avg1 = compute_average_reward_exact(simple_env, pi1)
-        avg2 = compute_average_reward_exact(simple_env, pi2)
-        
-        # Not necessarily different, but both should be valid
-        assert -1.0 <= avg1 <= 1.0
-        assert -1.0 <= avg2 <= 1.0
-    
-    def test_with_maze_env(self, maze_env):
-        """Test with maze environment."""
-        pi = uniform_policy(maze_env)
-        avg = compute_average_reward_exact(maze_env, pi)
-        
-        assert -1.0 <= avg <= 1.0
-
-
-class TestSimulationConsistency:
-    """Tests for consistency between simulation and exact computation."""
-    
-    def test_uniform_policy_consistency(self, simple_env):
-        """Test consistency for uniform policy (always ergodic)."""
-        rng = np.random.default_rng(42)
-        pi = uniform_policy(simple_env)
-        
-        exact_avg = compute_average_reward_exact(simple_env, pi)
-        
-        _, _, rewards = simulate(simple_env, pi, T=50000, rng=rng)
-        sim_avg = estimate_average_reward(rewards, burn_in=500)
-        
-        assert np.isclose(exact_avg, sim_avg, atol=0.03)

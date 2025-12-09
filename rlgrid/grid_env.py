@@ -10,9 +10,9 @@ The environment is parsed from text files where:
     - 'G' represents the unique goal cell
 
 The MDP operates in a continuing (average-reward) setting:
-    - Entering the goal yields +1 reward
+    - Entering the goal from a non-goal state yields +1 reward, next state is goal
+    - Taking any action from the goal state teleports to a random non-goal state, reward -1
     - All other transitions yield -1 reward
-    - Upon reaching the goal, the agent is teleported to a random non-wall, non-goal cell
 """
 
 from __future__ import annotations
@@ -271,12 +271,9 @@ class GridWorldEnv:
         Execute one step in the environment.
         
         The agent takes action a in state s. The transition is deterministic.
-        If the resulting state is the goal:
-            - Reward is +1
-            - Agent is teleported to a random non-wall, non-goal state
-        Otherwise:
-            - Reward is -1
-            - Agent moves to the new state
+        - If the agent is at the goal state: teleport to a random non-goal state, reward is -1
+        - If the resulting state is the goal: move to goal, reward is +1
+        - Otherwise: move to the new state, reward is -1
         
         Args:
             s: Current state index (0 to n_states-1).
@@ -297,17 +294,21 @@ class GridWorldEnv:
         if a < 0 or a >= self.n_actions:
             raise ValueError(f"Invalid action {a}. Must be in [0, {self.n_actions - 1}]")
         
+        # If at goal state, teleport to random non-goal state
+        if s == self.goal_state:
+            if len(self._non_goal_states) > 0:
+                s_next = self.rng.choice(self._non_goal_states)
+            else:
+                # If there are no non-goal states (single cell grid), stay at goal
+                s_next = self.goal_state
+            r = -1.0  # Reward for leaving goal (not entering it)
+            return s_next, r
+        
         # Get next state from transition kernel
         s_next = int(np.argmax(self.P[s, a]))
         
         # Compute reward based on reaching goal
         r = self.reward(s, a, s_next)
-        
-        # Teleport if we reached the goal
-        if s_next == self.goal_state:
-            if len(self._non_goal_states) > 0:
-                s_next = self.rng.choice(self._non_goal_states)
-            # If there are no non-goal states (single cell grid), stay at goal
         
         return s_next, r
     
